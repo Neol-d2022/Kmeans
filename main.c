@@ -504,7 +504,10 @@ int main(int argc, char **argv)
     }
 
     for (i = 0; i < u_objLength; i += 1)
+    {
         free(pb_object[i].s_objName);
+        free(pb_object[i].pb_d_value);
+    }
     free(pb_object);
     for (j = 0; j < u_nclusters; j += 1)
         free(ppb_d_kpoints[j]);
