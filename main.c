@@ -58,7 +58,7 @@ static int strSplit(const char *s_str, char ***ppb_s_str, unsigned int *pu_vleng
     p_prevPos = s_str;
     while ((p_chrPos = strchr(p_chrPos, ',')) != NULL)
     {
-        z_strLen = (size_t)p_chrPos - (size_t)p_prevPos;
+        z_strLen = (size_t)p_chrPos - (size_t)p_prevPos + 1;
         pb_s_str[i] = (char *)malloc(z_strLen);
         if (pb_s_str[i] == NULL)
         {
@@ -137,7 +137,7 @@ static int loadFile(const char *s_filename, linked_list_t **pp_head, unsigned in
         }
         if (u_vlength != u_valLength + 1)
         {
-            fprintf(stderr, "[ERROR] File format error in %s, line %u, CSV value length mismatc, expecting %u, got %u.\n", s_filename, u_lineCount, u_valLength + 1, u_vlength);
+            fprintf(stderr, "[ERROR] File format error in %s, line %u, CSV value length mismatch, expecting %u, got %u.\n", s_filename, u_lineCount, u_valLength + 1, u_vlength);
             fclose(pf_data);
             freeList(p_head);
             for (i = 0; i < u_vlength; i += 1)
@@ -374,15 +374,17 @@ int main(int argc, char **argv)
 
     for (i = 0; i < u_nclusters; i += 1)
     {
-        ppb_d_kpoints[i] = (double *)malloc(sizeof(**ppb_d_kpoints) * u_valLength);
-        fprintf(stderr, "[ERROR] ppb_d_kpoints[%u], malloc failed (requesting size %u)\n", i, (unsigned int)(sizeof(**ppb_d_kpoints) * u_valLength));
-        for (j = 0; j < i; j += 1)
-            free(ppb_d_kpoints[i]);
-        free(ppb_d_kpoints);
-        freeList(p_head);
-        free(p_d_valsum);
-        free(p_d_newCenter);
-        return 1;
+        if ((ppb_d_kpoints[i] = (double *)malloc(sizeof(**ppb_d_kpoints) * u_valLength)) == NULL)
+        {
+            fprintf(stderr, "[ERROR] ppb_d_kpoints[%u], malloc failed (requesting size %u)\n", i, (unsigned int)(sizeof(**ppb_d_kpoints) * u_valLength));
+            for (j = 0; j < i; j += 1)
+                free(ppb_d_kpoints[i]);
+            free(ppb_d_kpoints);
+            freeList(p_head);
+            free(p_d_valsum);
+            free(p_d_newCenter);
+            return 1;
+        }
     }
 
     pb_myClusters = (unsigned int *)malloc(sizeof(*pb_myClusters) * u_objLength);
@@ -418,7 +420,7 @@ int main(int argc, char **argv)
 
     for (i = 0; i < u_nclusters; i += 1)
         for (k = 0; k < u_valLength; k += 1)
-            ppb_d_kpoints[i][k] = pb_object[(u_objLength * (i + 1)) / u_nclusters].pb_d_value[k];
+            ppb_d_kpoints[i][k] = pb_object[(j = ((u_objLength * (i + 1)) / u_nclusters)) < u_valLength ? j : (u_valLength - 1)].pb_d_value[k];
 
     u_iteration = 0;
     do
@@ -492,10 +494,10 @@ int main(int argc, char **argv)
         for (j = 0; j < u_objLength; j += 1)
             if (pb_myClusters[j] == i)
             {
-                printf("%s", pb_object[j].s_objName);
-                for (k = 0; k < u_valLength; k += 1)
+                printf("%s\n", pb_object[j].s_objName);
+                /*for (k = 0; k < u_valLength; k += 1)
                     printf(",%.15lf", pb_object[j].pb_d_value[k]);
-                printf(",%u\n", i);
+                printf(",%u\n", i);*/
             }
 
         printf("=== Cluster %u ===\n\n", i + 1);
@@ -505,7 +507,7 @@ int main(int argc, char **argv)
         free(pb_object[i].s_objName);
     free(pb_object);
     for (j = 0; j < u_nclusters; j += 1)
-        free(ppb_d_kpoints[i]);
+        free(ppb_d_kpoints[j]);
     free(ppb_d_kpoints);
     free(pb_myClusters);
     free(p_d_valsum);
