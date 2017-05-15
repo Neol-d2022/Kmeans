@@ -275,7 +275,7 @@ static void usage(const char *s_exeName)
 int main(int argc, char **argv)
 {
     char ca_bBuf[32];
-    double d_mindis /*, d_minVal, d_maxVal*/, d_dis, d_diff, *p_d_valsum, *p_d_newCenter;
+    double d_mindis, d_minVal, d_maxVal, d_dis, d_diff, *p_d_valsum, *p_d_newCenter;
     linked_list_t *p_head;
     object_t *pb_object;
     double **ppb_d_kpoints;
@@ -417,6 +417,26 @@ int main(int argc, char **argv)
     d_maxVal = pb_object[u_objLength - 1].d_value;
     d_minVal = pb_object[0].d_value;
     fprintf(stderr, "[DEBUG] n = %u, min = %lf, max = %lf\n", u_objLength, d_minVal, d_maxVal);*/
+
+    for (k = 0; k < u_valLength; k += 1)
+    {
+        for (i = 0; i < u_objLength; i += 1)
+        {
+            d_minVal = DBL_MAX;
+            d_maxVal = DBL_MIN;
+
+            if (pb_object[i].pb_d_value[k] > d_maxVal)
+                d_maxVal = pb_object[i].pb_d_value[k];
+            if (pb_object[i].pb_d_value[k] < d_minVal)
+                d_minVal = pb_object[i].pb_d_value[k];
+        }
+
+        d_diff = d_maxVal - d_minVal;
+        for (i = 0; i < u_objLength; i += 1)
+        {
+            pb_object[i].pb_d_value[k] = (pb_object[i].pb_d_value[k] - d_minVal) / d_diff; //Normalize (0 ~ 1)
+        }
+    }
 
     for (i = 0; i < u_nclusters; i += 1)
         for (k = 0; k < u_valLength; k += 1)
